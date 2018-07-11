@@ -148,6 +148,7 @@ type Config struct {
 		DomainID   string `gcfg:"domain-id"`
 		DomainName string `gcfg:"domain-name"`
 		Region     string
+		TokenID    string `gcfg:"auth-token"`
 		CAFile     string `gcfg:"ca-file"`
 	}
 	LoadBalancer LoadBalancerOpts
@@ -178,6 +179,7 @@ func (cfg Config) toAuthOptions() gophercloud.AuthOptions {
 		TenantName:       cfg.Global.TenantName,
 		DomainID:         cfg.Global.DomainID,
 		DomainName:       cfg.Global.DomainName,
+		TokenID:          cfg.Global.TokenID,
 
 		// Persistent service, so we need to be able to renew tokens.
 		AllowReauth: true,
@@ -192,6 +194,7 @@ func (cfg Config) toAuth3Options() tokens3.AuthOptions {
 		Password:         cfg.Global.Password,
 		DomainID:         cfg.Global.DomainID,
 		DomainName:       cfg.Global.DomainName,
+		TokenID:          cfg.Global.TokenID,
 		AllowReauth:      true,
 	}
 }
@@ -224,6 +227,11 @@ func configFromEnv() (cfg Config, ok bool) {
 		cfg.Global.DomainName = os.Getenv("OS_USER_DOMAIN_NAME")
 	}
 
+	cfg.Global.TokenID = os.Getenv("OS_AUTH_TOKEN")
+	if cfg.Global.TokenID == "" {
+		cfg.Global.TokenID = os.Getenv("OS_TOKEN")
+	}
+
 	ok = cfg.Global.AuthURL != "" &&
 		cfg.Global.Username != "" &&
 		cfg.Global.Password != "" &&
@@ -231,6 +239,10 @@ func configFromEnv() (cfg Config, ok bool) {
 			cfg.Global.DomainID != "" || cfg.Global.DomainName != "" ||
 			cfg.Global.Region != "" || cfg.Global.UserID != "" ||
 			cfg.Global.TrustID != "")
+
+	ok = ok || (
+		cfg.Global.AuthURL != "" &&
+		cfg.Global.TokenID != "")
 
 	cfg.Metadata.SearchOrder = fmt.Sprintf("%s,%s", configDriveID, metadataID)
 	cfg.BlockStorage.BSVersion = "auto"
